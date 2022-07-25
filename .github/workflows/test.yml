@@ -1,0 +1,52 @@
+name: Test
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  server-test:
+    strategy:
+      matrix:
+        db: ['mysql:5.7','mysql:latest']
+        go: ['1.17', '1.16' , '1.18']
+        platform: [ubuntu-latest]
+    runs-on: ${{ matrix.platform }}
+
+    services:
+      mysql:
+        image: ${{ matrix.db }}
+        env:
+          MYSQL_DATABASE: idempotent
+          MYSQL_USER: idempotent
+          MYSQL_PASSWORD: idempotent
+          MYSQL_RANDOM_ROOT_PASSWORD: "yes"
+        ports:
+          - 9910:3306
+        options: >-
+          --health-cmd "mysqladmin ping -uidempotent -pidempotent"
+          --health-interval 10s
+          --health-start-period 10s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - name: Set up Go 1.x
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.go }}
+
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: go mod package cache
+        uses: actions/cache@v2
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ matrix.go }}-${{ hashFiles('tests/go.mod') }}
+
+      - name: Test
+        run: |
+          export MYSQL_CONN_STR="idempotent:idempotent@tcp(localhost:9910)/idempotent?charset=utf8&parseTime=True"
+          make test
