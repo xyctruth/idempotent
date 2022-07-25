@@ -1,5 +1,7 @@
 # Idempotent
 
+[![Test](https://github.com/xyctruth/idempotent/actions/workflows/test.yml/badge.svg)](https://github.com/xyctruth/idempotent/actions/workflows/test.yml)
+
 Go idempotent library
 
 ## GORM Drive
